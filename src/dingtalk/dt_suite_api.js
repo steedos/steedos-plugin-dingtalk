@@ -1,7 +1,16 @@
-exports.accessTokenGet = function (key, secret) {
+Dingtalk.suiteAccessTokenGet = function (suite_key, suite_secret, suite_ticket) {
     var err, response;
     try {
-        response = HTTP.get("https://oapi.dingtalk.com/gettoken?appkey=" + key + "&appsecret=" + secret);
+        response = HTTP.post("https://oapi.dingtalk.com/service/get_suite_token", {
+            data: {
+                suite_key: suite_key,
+                suite_secret: suite_secret,
+                suite_ticket: suite_ticket
+            },
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
         if (response.error_code) {
             throw response.msg;
         }
@@ -12,13 +21,13 @@ exports.accessTokenGet = function (key, secret) {
     } catch (_error) {
         err = _error;
         console.error(err);
-        throw _.extend(new Error("Failed to complete OAuth handshake with accessTokenGet. " + err), {
+        throw _.extend(new Error("Failed to complete OAuth handshake with suiteAccessTokenGet. " + err), {
             response: err
         });
     }
 };
 
-let permanentCodeGet = function (suite_access_token, tmp_auth_code) {
+Dingtalk.permanentCodeGet = function (suite_access_token, tmp_auth_code) {
     var err, response;
     try {
         response = HTTP.post("https://oapi.dingtalk.com/service/get_permanent_code?suite_access_token=" + suite_access_token, {
@@ -45,7 +54,7 @@ let permanentCodeGet = function (suite_access_token, tmp_auth_code) {
     }
 };
 
-let corpTokenGet = function (suite_access_token, auth_corpid, permanent_code) {
+Dingtalk.corpTokenGet = function (suite_access_token, auth_corpid, permanent_code) {
     var err, response;
     try {
         response = HTTP.post("https://oapi.dingtalk.com/service/get_corp_token?suite_access_token=" + suite_access_token, {
@@ -73,7 +82,7 @@ let corpTokenGet = function (suite_access_token, auth_corpid, permanent_code) {
     }
 };
 
-let activateSuitePost = function (suite_access_token, suite_key, auth_corpid, permanent_code) {
+Dingtalk.activateSuitePost = function (suite_access_token, suite_key, auth_corpid, permanent_code) {
     var err, response;
     try {
         response = HTTP.post("https://oapi.dingtalk.com/service/activate_suite?suite_access_token=" + suite_access_token, {
@@ -102,7 +111,7 @@ let activateSuitePost = function (suite_access_token, suite_key, auth_corpid, pe
     }
 };
 
-let departmentGet = function (access_token, department_id) {
+Dingtalk.departmentGet = function (access_token, department_id) {
     var err, response;
     try {
         response = HTTP.get("https://oapi.dingtalk.com/department/get", {
@@ -127,7 +136,7 @@ let departmentGet = function (access_token, department_id) {
     }
 };
 
-let departmentListGet = function (access_token) {
+Dingtalk.departmentListGet = function (access_token) {
     var err, response;
     try {
         response = HTTP.get("https://oapi.dingtalk.com/department/list", {
@@ -152,7 +161,7 @@ let departmentListGet = function (access_token) {
     }
 };
 
-let userListGet = function (access_token, department_id) {
+Dingtalk.userListGet = function (access_token, department_id) {
     var err, response;
     try {
         response = HTTP.get("https://oapi.dingtalk.com/user/list", {
@@ -178,7 +187,7 @@ let userListGet = function (access_token, department_id) {
     }
 };
 
-let getToken = function (corpid, corpsecret) {
+Dingtalk.getToken = function (corpid, corpsecret) {
     var err, response;
     try {
         response = HTTP.get("https://oapi.dingtalk.com/gettoken", {
@@ -204,7 +213,7 @@ let getToken = function (corpid, corpsecret) {
     }
 };
 
-let jsapiTicketGet = function (access_token) {
+Dingtalk.jsapiTicketGet = function (access_token) {
     var err, response;
     try {
         response = HTTP.get("https://oapi.dingtalk.com/get_jsapi_ticket?access_token=" + access_token, {
@@ -232,7 +241,7 @@ let jsapiTicketGet = function (access_token) {
     }
 };
 
-let authInfoGet = function (suite_access_token, suite_key, auth_corpid, permanent_code) {
+Dingtalk.authInfoGet = function (suite_access_token, suite_key, auth_corpid, permanent_code) {
     var err, response;
     try {
         response = HTTP.post("https://oapi.dingtalk.com/service/get_auth_info?suite_access_token=" + suite_access_token, {
@@ -261,7 +270,7 @@ let authInfoGet = function (suite_access_token, suite_key, auth_corpid, permanen
     }
 };
 
-let userInfoGet = function (access_token, code) {
+Dingtalk.userInfoGet = function (access_token, code) {
     var err, response;
     try {
         response = HTTP.get("https://oapi.dingtalk.com/user/getuserinfo?access_token=" + access_token + "&code=" + code, {
@@ -289,7 +298,7 @@ let userInfoGet = function (access_token, code) {
     }
 };
 
-let userGet = function (access_token, userid) {
+Dingtalk.userGet = function (access_token, userid) {
     var err, response;
     try {
         response = HTTP.get("https://oapi.dingtalk.com/user/get?access_token=" + access_token + "&userid=" + userid, {
@@ -317,14 +326,14 @@ let userGet = function (access_token, userid) {
     }
 };
 
-let syncCompany = function (access_token, auth_corp_info, permanent_code) {
+Dingtalk.syncCompany = function (access_token, auth_corp_info, permanent_code) {
     var admin_ids, deleted_org_ids, deleted_su_ids, forms_count, now, org_data, org_ids, owner_id, root_org, root_org_query, s, s_doc, s_dt, s_id, space_data, space_id, sq, su_ids, user_data;
     now = new Date;
     space_data = auth_corp_info;
-    org_data = departmentListGet(access_token);
+    org_data = Dingtalk.departmentListGet(access_token);
     user_data = [];
     org_data.forEach(function (org) {
-        return user_data = user_data.concat(userListGet(access_token, org.id));
+        return user_data = user_data.concat(Dingtalk.userListGet(access_token, org.id));
     });
     owner_id = null;
     admin_ids = [];
@@ -513,7 +522,7 @@ let syncCompany = function (access_token, auth_corp_info, permanent_code) {
             _id: o._id
         });
     });
-    createOrg(org_data, void 0, space_id, space_data.corpid, owner_id);
+    Dingtalk.createOrg(org_data, void 0, space_id, space_data.corpid, owner_id);
     user_data.forEach(function (u) {
         var count, new_org_id, p_dept_id, r, space_user_id, su, su_doc, su_id, suq, ucl_doc;
         su_id = "dt-" + u.userid;
@@ -643,7 +652,7 @@ let syncCompany = function (access_token, auth_corp_info, permanent_code) {
     }
 };
 
-let createOrg = function (depts, parentid, space_id, company_id, owner_id) {
+Dingtalk.createOrg = function (depts, parentid, space_id, company_id, owner_id) {
     var now, orgs;
     now = new Date;
     orgs = depts.filter(function (d) {
@@ -697,7 +706,7 @@ let createOrg = function (depts, parentid, space_id, company_id, owner_id) {
                 org_id = db.organizations.direct.insert(org_doc);
             }
             if (org_id) {
-                return createOrg(depts, o.id, space_id, company_id, owner_id);
+                return Dingtalk.createOrg(depts, o.id, space_id, company_id, owner_id);
             }
         });
     }

@@ -1,35 +1,100 @@
-DingtalkManager = {};
+// DingtalkManager = {};
 
-DingtalkManager.dd_init_mobile = function(_config) {
+// DingtalkManager.dd_init_mobile = function(_config) {
+
+//     dd.config({
+//         agentId: _config.agentId,
+//         corpId: _config.corpId,
+//         timeStamp: _config.timeStamp,
+//         nonceStr: _config.nonceStr,
+//         signature: _config.signature,
+//         jsApiList: [
+//             'runtime.info',
+//             'biz.contact.choose',
+//             'device.notification.confirm',
+//             'device.notification.alert',
+//             'device.notification.prompt',
+//             'biz.ding.post',
+//             'biz.util.openLink',
+//             'runtime.permission.requestAuthCode'
+//         ]
+//     });
+
+//     dd.ready(function() {
+
+//         dd.runtime.info({
+//             onSuccess: function(info) {
+//                 console.log('runtime info: ' + JSON.stringify(info));
+//             },
+//             onFail: function(err) {
+//                 console.log('fail: ' + JSON.stringify(err));
+//             }
+//         });
+
+//         dd.runtime.permission.requestAuthCode({
+//             corpId: _config.corpId, //企业id
+//             onSuccess: function(info) {
+//                 var data = {
+//                     'access_token': _config.access_token,
+//                     'code': info.code
+//                 }
+//                 var data = JSON.stringify(data);
+//                 $.ajax({
+//                     url: Meteor.absoluteUrl('api/dingtalk/sso_steedos'),
+//                     type: 'POST',
+//                     async: false,
+//                     data: data,
+//                     dataType: 'json',
+//                     processData: false,
+//                     contentType: "application/json",
+//                     success: function(responseText, status) {
+//                         if (responseText == 'success') {
+//                             Steedos.loginWithCookie(function() {
+//                                 FlowRouter.go('/');
+//                             })
+
+//                         } else {
+//                             toastr.error(responseText);
+//                             return;
+//                         }
+//                     },
+//                     error: function(xhr, msg, ex) {
+//                         toastr.error(msg);
+//                     }
+//                 });
+
+//             },
+//             onFail: function(err) {
+//                 console.log('requestAuthCode fail: ' + JSON.stringify(err));
+//             }
+//         });
+//     });
+
+//     dd.error(function(err) {
+//         alert('dd error: ' + JSON.stringify(err));
+//     });
+// }
+
+
+
+exports.dd_init_pc = function(_config) {
+
+    console.log(_config);
 
     dd.config({
         agentId: _config.agentId,
         corpId: _config.corpId,
-        timeStamp: _config.timeStamp,
-        nonceStr: _config.nonceStr,
-        signature: _config.signature,
+        // timeStamp: _config.timeStamp,
+        // nonceStr: _config.nonceStr,
+        // signature: _config.signature,
         jsApiList: [
-            'runtime.info',
-            'biz.contact.choose',
             'device.notification.confirm',
             'device.notification.alert',
-            'device.notification.prompt',
-            'biz.ding.post',
-            'biz.util.openLink',
             'runtime.permission.requestAuthCode'
         ]
     });
 
     dd.ready(function() {
-
-        dd.runtime.info({
-            onSuccess: function(info) {
-                console.log('runtime info: ' + JSON.stringify(info));
-            },
-            onFail: function(err) {
-                console.log('fail: ' + JSON.stringify(err));
-            }
-        });
 
         dd.runtime.permission.requestAuthCode({
             corpId: _config.corpId, //企业id
@@ -39,29 +104,30 @@ DingtalkManager.dd_init_mobile = function(_config) {
                     'code': info.code
                 }
                 var data = JSON.stringify(data);
-                $.ajax({
-                    url: Meteor.absoluteUrl('api/dingtalk/sso_steedos'),
-                    type: 'POST',
-                    async: false,
-                    data: data,
-                    dataType: 'json',
-                    processData: false,
-                    contentType: "application/json",
-                    success: function(responseText, status) {
-                        if (responseText == 'success') {
-                            Steedos.loginWithCookie(function() {
-                                FlowRouter.go('/');
-                            })
+                console.log("data----: ",data);
+                // $.ajax({
+                //     url: Meteor.absoluteUrl('api/dingtalk/sso_steedos'),
+                //     type: 'POST',
+                //     async: false,
+                //     data: data,
+                //     dataType: 'json',
+                //     processData: false,
+                //     contentType: "application/json",
+                //     success: function(responseText, status) {
+                //         if (responseText == 'success') {
+                //             Steedos.loginWithCookie(function() {
+                //                 FlowRouter.go('/');
+                //             })
 
-                        } else {
-                            toastr.error(responseText);
-                            return;
-                        }
-                    },
-                    error: function(xhr, msg, ex) {
-                        toastr.error(msg);
-                    }
-                });
+                //         } else {
+                //             toastr.error(responseText);
+                //             return;
+                //         }
+                //     },
+                //     error: function(xhr, msg, ex) {
+                //         toastr.error(msg);
+                //     }
+                // });
 
             },
             onFail: function(err) {
@@ -71,71 +137,6 @@ DingtalkManager.dd_init_mobile = function(_config) {
     });
 
     dd.error(function(err) {
-        alert('dd error: ' + JSON.stringify(err));
-    });
-}
-
-
-
-DingtalkManager.dd_init_pc = function(_config) {
-
-    console.log(_config);
-
-    DingTalkPC.config({
-        agentId: _config.agentId,
-        corpId: _config.corpId,
-        timeStamp: _config.timeStamp,
-        nonceStr: _config.nonceStr,
-        signature: _config.signature,
-        jsApiList: [
-            'device.notification.confirm',
-            'device.notification.alert',
-            'runtime.permission.requestAuthCode'
-        ]
-    });
-
-    DingTalkPC.ready(function() {
-
-        DingTalkPC.runtime.permission.requestAuthCode({
-            corpId: _config.corpId, //企业id
-            onSuccess: function(info) {
-                var data = {
-                    'access_token': _config.access_token,
-                    'code': info.code
-                }
-                var data = JSON.stringify(data);
-                $.ajax({
-                    url: Meteor.absoluteUrl('api/dingtalk/sso_steedos'),
-                    type: 'POST',
-                    async: false,
-                    data: data,
-                    dataType: 'json',
-                    processData: false,
-                    contentType: "application/json",
-                    success: function(responseText, status) {
-                        if (responseText == 'success') {
-                            Steedos.loginWithCookie(function() {
-                                FlowRouter.go('/');
-                            })
-
-                        } else {
-                            toastr.error(responseText);
-                            return;
-                        }
-                    },
-                    error: function(xhr, msg, ex) {
-                        toastr.error(msg);
-                    }
-                });
-
-            },
-            onFail: function(err) {
-                console.log('requestAuthCode fail: ' + JSON.stringify(err));
-            }
-        });
-    });
-
-    DingTalkPC.error(function(err) {
         alert('dd error: ' + JSON.stringify(err));
     });
 }
