@@ -204,7 +204,7 @@ let getToken = function (corpid, corpsecret) {
     }
 };
 
-let jsapiTicketGet = function (access_token) {
+exports.jsapiTicketGet = function (access_token) {
     var err, response;
     try {
         response = HTTP.get("https://oapi.dingtalk.com/get_jsapi_ticket?access_token=" + access_token, {
@@ -261,7 +261,7 @@ let authInfoGet = function (suite_access_token, suite_key, auth_corpid, permanen
     }
 };
 
-let userInfoGet = function (access_token, code) {
+exports.userInfoGet = function (access_token, code) {
     var err, response;
     try {
         response = HTTP.get("https://oapi.dingtalk.com/user/getuserinfo?access_token=" + access_token + "&code=" + code, {
@@ -289,7 +289,7 @@ let userInfoGet = function (access_token, code) {
     }
 };
 
-let userGet = function (access_token, userid) {
+exports.userGet = function (access_token, userid) {
     var err, response;
     try {
         response = HTTP.get("https://oapi.dingtalk.com/user/get?access_token=" + access_token + "&userid=" + userid, {
@@ -699,6 +699,27 @@ let createOrg = function (depts, parentid, space_id, company_id, owner_id) {
             if (org_id) {
                 return createOrg(depts, o.id, space_id, company_id, owner_id);
             }
+        });
+    }
+};
+
+exports.spaceGet = function(corpId){
+    try {
+        let space;
+        let spaceId = typeof steedosConfig !== "undefined" && steedosConfig !== null ? (_ref5 = steedosConfig.tenant) != null ? _ref5._id : void 0 : void 0;
+        if(corpId){
+            space = Creator.getCollection('spaces').findOne({"dingtalk_corp_id": corpId});
+        }else if (spaceId){
+            space = Creator.getCollection('spaces').findOne({});
+        }else{
+            space = Creator.getCollection('spaces').findOne({_id:spaceId});
+        }
+
+        return space;
+    } catch (err) {
+        console.error(err);
+        throw _.extend(new Error("Failed to get space with error: " + err), {
+            response: err
         });
     }
 }

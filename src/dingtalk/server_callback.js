@@ -1,4 +1,4 @@
-let WXBizMsgCrypt = require('wechat-crypto');
+// let WXBizMsgCrypt = require('wechat-crypto');
 let express = require('express');
 let router = express.Router();
 let dt = require('./dingtalk');
@@ -8,6 +8,7 @@ let steedosConfig = objectql.getSteedosConfig();
 let methods = require('../methods/dt_sso');
 let dtApi = require('./dt_api');
 let DingtalkManager = require('./dingtalk_manager');
+const auth = require("@steedos/auth");
 // let jsapi = require('./jsapi');
 
 //钉钉文档：http://ddtalk.github.io/dingTalkDoc/?spm=a3140.7785475.0.0.p5bAUd#2-回调接口（分为五个回调类型）
@@ -19,15 +20,18 @@ let config = {
 }
 
 //suite4xxxxxxxxxxxxxxx 是钉钉默认测试suiteid 
-let newCrypt = new WXBizMsgCrypt(config.token, config.encodingAESKey, config.suiteKey || 'suite4xxxxxxxxxxxxxxx');
-let TICKET_EXPIRES_IN = config.ticket_expires_in || 1000 * 60 * 20 //20分钟
+// let newCrypt = new WXBizMsgCrypt(config.token, config.encodingAESKey, config.suiteKey || 'suite4xxxxxxxxxxxxxxx');
+// let TICKET_EXPIRES_IN = config.ticket_expires_in || 1000 * 60 * 20 //20分钟
 
 const Dingtalk = {};
 
 router.get("/steedos/dingtalk/sso_mobile", async function (req, res, next){
-    let queryParams = req.query;
-    if (!Meteor.userId() && queryParams.corpid) {
-        Meteor.call('dingtalk_sso', queryParams.corpid, steedosConfig.ROOT_URL, function(error, result) {
+    let space = dt.getSpace();
+    let cookies = new Cookies(req, res);
+    let userId = cookies.get("X-User-Id");
+    let authToken = cookies.get("X-Auth-Token");
+    if (!userId && space.dingtalk_corp_id) {
+        Meteor.call('dingtalk_sso', space.dingtalk_corp_id, Meteor.absoluteUrl(), function(error, result) {
             if (error) {
                 throw _.extend(new Error("Error!" + error.message));
             }
@@ -46,9 +50,8 @@ router.get('/steedos/dingtalk/sso_pc', async function (req, res, next){
     let userId = cookies.get("X-User-Id");
     let authToken = cookies.get("X-Auth-Token");
 
-    console.log("/steedos/dingtalk/sso_pc: ",steedosConfig.ROOT_URL);
     if (!userId && space.dingtalk_corp_id) {
-        Meteor.call('dingtalk_sso', space.dingtalk_corp_id, steedosConfig.ROOT_URL, function(error, result) {
+        Meteor.call('dingtalk_sso', space.dingtalk_corp_id, Meteor.absoluteUrl(), function(error, result) {
             if (error) {
                 throw _.extend(new Error("Error!" + error.message));
             }
@@ -271,36 +274,33 @@ router.post("/api/dingtalk/sso_steedos", async function (req, res, next) {
         });
     }
 
-    let access_token = req.body.access_token;
+    let space = dtApi.spaceGet(req.body.corpId);
+    if (!space)
+        res.reply("缺少参数 corpId!");
+    
+    let access_token = dtApi.accessTokenGet(space.dingtalk_key, space.dingtalk_secret).access_token;
     let code = req.body.code;
 
     if (!code || !access_token)
         res.reply("缺少参数!");
 
-    let user_info, user_detail, user;
-    user_info = Dingtalk.userInfoGet(access_token, code);
+    let user_info, user_detail, space_user;
+    user_info = dtApi.userInfoGet(access_token, code);
 
     if (user_info && user_info.userid) {
-        user_detail = Dingtalk.userGet(access_token, user_info.userid);
-
-        if (user_detail && user_detail.dingId) {
-            user = db.users.findOne({
-                'services.dingtalk.id': user_detail.dingId
-            });
-            if (user) {
-                let userId = user._id;
-                let authToken = Accounts._generateStampedLoginToken();
-                let hashedToken = Accounts._hashStampedToken(authToken);
-                Accounts._insertHashedLoginToken(userId, hashedToken);
-
-                Setup.setAuthCookies(req, res, userId, authToken.token);
-
-                JsonRoutes.sendResult(res, {
-                    data: 'success'
-                });
-            } else {
-                res.reply("用户不存在!");
-            }
+        space_user = db.space_users.findOne({
+            'dingtalk_id': user_info.userid
+        });
+        if (space_user) {
+            // console.log("spaceUser: ",space_user.name);
+            let stampedAuthToken = auth.generateStampedLoginToken();
+            let authtToken = stampedAuthToken.token;
+            let hashedToken = auth.hashStampedToken(stampedAuthToken);
+            await auth.insertHashedLoginToken(space_user.user, hashedToken);
+            auth.setAuthCookies(req, res, space_user.user, authtToken, space._id);
+            res.setHeader('X-Space-Token', space._id + ',' + authtToken);
+            res.redirect(302, '/');
+            return res.end('');
         } else {
             res.reply("用户不存在!");
         }

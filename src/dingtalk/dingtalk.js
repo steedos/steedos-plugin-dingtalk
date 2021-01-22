@@ -1,7 +1,7 @@
 let objectql = require('@steedos/objectql');
 let steedosConfig = objectql.getSteedosConfig();
 
-exports.getSpace = function(){
+exports.getSpace = function(corpId){
     try {
         let space;
         let spaceId = typeof steedosConfig !== "undefined" && steedosConfig !== null ? (_ref5 = steedosConfig.tenant) != null ? _ref5._id : void 0 : void 0;
