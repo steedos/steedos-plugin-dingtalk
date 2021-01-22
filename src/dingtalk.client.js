@@ -67,7 +67,7 @@ var dingTalkLogin = function(corpId, code){
                 console.log("success");
             },
             error: function(xhr, msg, ex) {
-                console.error(msg);
+                console.log("errmsg: ", msg);
             }
         });
     }

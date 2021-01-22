@@ -1,11 +1,9 @@
 // let WXBizMsgCrypt = require('wechat-crypto');
 let express = require('express');
 let router = express.Router();
-let dt = require('./dingtalk');
 let Cookies = require("cookies");
 let objectql = require('@steedos/objectql');
 let steedosConfig = objectql.getSteedosConfig();
-let methods = require('../methods/dt_sso');
 let dtApi = require('./dt_api');
 let DingtalkManager = require('./dingtalk_manager');
 const auth = require("@steedos/auth");
@@ -26,7 +24,7 @@ let config = {
 const Dingtalk = {};
 
 router.get("/steedos/dingtalk/sso_mobile", async function (req, res, next){
-    let space = dt.getSpace();
+    let space = dtApi.spaceGet();
     let cookies = new Cookies(req, res);
     let userId = cookies.get("X-User-Id");
     let authToken = cookies.get("X-Auth-Token");
@@ -45,7 +43,7 @@ router.get("/steedos/dingtalk/sso_mobile", async function (req, res, next){
 });
 
 router.get('/steedos/dingtalk/sso_pc', async function (req, res, next){
-    let space = dt.getSpace();
+    let space = dtApi.spaceGet();
     let cookies = new Cookies(req, res);
     let userId = cookies.get("X-User-Id");
     let authToken = cookies.get("X-Auth-Token");

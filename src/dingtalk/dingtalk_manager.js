@@ -1,8 +1,3 @@
-let dd = require('dingtalk-jsapi');
-
-
-// DingtalkManager = {};
-
 exports.dd_init_mobile = function(_config) {
     console.log("dd.env.platform：", dd.env.platform);
     dd.config({
@@ -84,18 +79,18 @@ exports.dd_init_pc = function(_config) {
 
     console.log(_config);
     
-    // dd.config({
-    //     agentId: _config.agentId,
-    //     corpId: _config.corpId,
-    //     timeStamp: _config.timeStamp,
-    //     nonceStr: _config.nonceStr,
-    //     signature: _config.signature,
-    //     jsApiList: [
-    //         'device.notification.confirm',
-    //         'device.notification.alert',
-    //         'runtime.permission.requestAuthCode'
-    //     ]
-    // });
+    dd.config({
+        agentId: _config.agentId,
+        corpId: _config.corpId,
+        timeStamp: _config.timeStamp,
+        nonceStr: _config.nonceStr,
+        signature: _config.signature,
+        jsApiList: [
+            'device.notification.confirm',
+            'device.notification.alert',
+            'runtime.permission.requestAuthCode'
+        ]
+    });
 
     console.log("dd.env.platform：", dd.env.platform);
     dd.ready(function() {
