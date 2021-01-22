@@ -1,10 +1,10 @@
 var loadSdk = function () {
+    // alert("11111");
     $.ajax({
         url: "https://g.alicdn.com/dingding/dingtalk-jsapi/2.10.3/dingtalk.open.js",
         async: false,
         dataType: "script",
         success: function () {
-            // alert(dd);
             loadSdkSuc();
         },
         error: function (err) {
@@ -48,8 +48,8 @@ var loadSdkSuc = function () {
 
 }
 
-var dingTalkLogin = function(corpId, code){
-    if (corpId && code){
+var dingTalkLogin = function (corpId, code) {
+    if (corpId && code) {
         var data = {
             'corpId': corpId,
             'code': code
@@ -63,10 +63,11 @@ var dingTalkLogin = function(corpId, code){
             dataType: 'json',
             processData: false,
             contentType: "application/json",
-            success: function(responseText, status) {
+            success: function (responseText, status) {
                 console.log("success");
+                FlowRouter.go("/");
             },
-            error: function(xhr, msg, ex) {
+            error: function (xhr, msg, ex) {
                 console.log("errmsg: ", msg);
             }
         });
