@@ -6,6 +6,7 @@ let objectql = require('@steedos/objectql');
 let steedosConfig = objectql.getSteedosConfig();
 let dtApi = require('./dt_api');
 let DingtalkManager = require('./dingtalk_manager');
+let push = require('./notifications');
 const auth = require("@steedos/auth");
 // let jsapi = require('./jsapi');
 
@@ -265,7 +266,12 @@ router.post("/api/dingtalk/init", async function (req, res, next) {
 
 // dingtalk免登给用户设置cookies
 router.post("/api/dingtalk/sso_steedos", async function (req, res, next) {
-
+    let authtToken,hashedToken,userId,cookies;
+    console.log("/api/dingtalk/sso_steedos");
+    cookies = new Cookies(req, res);
+    userId = cookies.get("X-User-Id");
+    authToken = cookies.get("X-Auth-Token");
+    
     res.reply = function (result) {
         JsonRoutes.sendResult(res, {
             data: result
@@ -289,19 +295,28 @@ router.post("/api/dingtalk/sso_steedos", async function (req, res, next) {
         space_user = db.space_users.findOne({
             'dingtalk_id': user_info.userid
         });
-        if (space_user) {
-            // console.log("spaceUser: ",space_user.name);
-            let stampedAuthToken = auth.generateStampedLoginToken();
-            let authtToken = stampedAuthToken.token;
-            let hashedToken = auth.hashStampedToken(stampedAuthToken);
-            await auth.insertHashedLoginToken(space_user.user, hashedToken);
-            auth.setAuthCookies(req, res, space_user.user, authtToken, space._id);
-            res.setHeader('X-Space-Token', space._id + ',' + authtToken);
-            res.redirect(302, '/');
-            return res.end('');
-        } else {
-            res.reply("用户不存在!");
+        if (space_user && authToken) {
+            if (space_user.user != userId) {
+                console.log("space_user.user != userId");
+                dtApi.clearAuthCookies(req, res);
+                hashedToken = Accounts._hashLoginToken(authToken);
+                Accounts.destroyToken(userId, hashedToken);
+            } else {
+                console.log("space_user.user ======= userId");
+                return res.end('login');
+            }
         }
+        console.log("user_info && user_info.userid");
+        let stampedAuthToken = auth.generateStampedLoginToken();
+        let space_user_id = space_user.user;
+        // console.log("space_user: ",space_user);
+        // console.log("user_info: ",user_info);
+        authtToken = stampedAuthToken.token;
+        hashedToken = auth.hashStampedToken(stampedAuthToken);
+        await auth.insertHashedLoginToken(space_user_id, hashedToken);
+        auth.setAuthCookies(req, res, space_user_id, authtToken, space._id);
+        res.setHeader('X-Space-Token', space._id + ',' + authtToken);
+        return res.end('reload');
     } else {
         res.reply("用户不存在!");
     }

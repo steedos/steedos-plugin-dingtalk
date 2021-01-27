@@ -1,16 +1,15 @@
 var loadSdk = function () {
-    // alert("11111");
     $.ajax({
         url: "https://g.alicdn.com/dingding/dingtalk-jsapi/2.10.3/dingtalk.open.js",
         async: false,
-        dataType: "script",
         success: function () {
             loadSdkSuc();
         },
         error: function (err) {
-            console.log('requestAuthCode fail: ' + err);
+            console.log("requestAuthCode fail: " + err);
         }
     });
+    console.log("dd---------: ",dd);
 }
 
 var loadSdkSuc = function () {
@@ -18,10 +17,12 @@ var loadSdkSuc = function () {
         dd.ready(function () {
             //获取当前网页的url
             //http://ding-web.lnexin.cn/?corpid=ding46a9582af5b7541b35c2fxxxxxxxxxx8f
-            var currentUrl = document.location.toString()
-
+            // corpid = "dingfebd9468b8bf250cf5bf40eda33b7ba0"
+            var currentUrl = document.location.toString();
+            // dd.env.platform
             // 解析url中包含的corpId
-            var corp_id = currentUrl.split("corpid=")[1];
+            // var corp_id = currentUrl.split("corpid=")[1];
+            var corp_id = "dingfebd9468b8bf250cf5bf40eda33b7ba0";
             //使用SDK 获取免登授权码
             dd.runtime.permission.requestAuthCode({
                 corpId: corp_id,
@@ -34,44 +35,53 @@ var loadSdkSuc = function () {
             });
         });
         dd.error(function (error) {
-            /**
-             {
-                errorMessage:"错误信息",// errorMessage 信息会展示出钉钉服务端生成签名使用的参数，请和您生成签名的参数作对比，找出错误的参数
-                errorCode: "错误码"
-            }
-            **/
-           console.log('dd error: ' + JSON.stringify(error));
+           console.log("dd error: " + JSON.stringify(error));
         });
     } catch (err) {
-        console.log('try catch error: ' + err);
+        console.log("try catch error: " + err);
     }
-
 }
 
 var dingTalkLogin = function (corpId, code) {
     if (corpId && code) {
         var data = {
-            'corpId': corpId,
-            'code': code
-        }
+            "corpId": corpId,
+            "code": code
+        };
         var data = JSON.stringify(data);
         $.ajax({
-            url: Meteor.absoluteUrl('api/dingtalk/sso_steedos'),
-            type: 'POST',
+            url: Meteor.absoluteUrl("api/dingtalk/sso_steedos"),
+            type: "POST",
             async: false,
             data: data,
-            dataType: 'json',
-            processData: false,
             contentType: "application/json",
             success: function (responseText, status) {
-                console.log("success");
-                FlowRouter.go("/");
+                console.log("responseText ",responseText);
+                if (responseText == "reload"){
+                    window.location = Meteor.absoluteUrl();
+                }
             },
             error: function (xhr, msg, ex) {
                 console.log("errmsg: ", msg);
             }
         });
     }
+}
+
+var dingTalkCid = function(corpId){
+    
+    dd.biz.chat.pickConversation({
+        corpId: 'dingfebd9468b8bf250cf5bf40eda33b7ba0',
+        isConfirm: true,
+        onSuccess : function(res) {
+            // 调用成功时回调
+            console.log(res)
+        },
+        onFail : function(err) {
+            // 调用失败时回调
+            console.log(err)
+        }
+    })
 }
 
 loadSdk();

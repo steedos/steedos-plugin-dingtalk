@@ -67,6 +67,12 @@ Meteor.methods({
             return _config;
         }
         
+    },
+    dingtalk_space: function(){
+        let space = dtApi.spaceGet();
+        if (space){
+            return space.dingtalk_corp_id;
+        }
     }
 
 })
