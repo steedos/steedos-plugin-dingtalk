@@ -722,4 +722,49 @@ exports.spaceGet = function(corpId){
             response: err
         });
     }
+};
+
+// 清理cookies
+exports.clearAuthCookies = function(req, res) {
+    var cookies, uri;
+    cookies = new Cookies(req, res);
+    cookies.set("X-User-Id");
+    cookies.set("X-Auth-Token");
+    if (req.headers.origin) {
+        uri = new URI(req.headers.origin);
+    } else if (req.headers.referer) {
+        uri = new URI(req.headers.referer);
+    }
+    cookies.set("X-User-Id", "", {
+        domain: uri != null ? uri.domain() : void 0,
+        overwrite: true
+    });
+    return cookies.set("X-Auth-Token", "", {
+        domain: uri != null ? uri.domain() : void 0,
+        overwrite: true
+    });
+};
+
+exports.sendMessage = function(data, access_token){
+    try {
+        let url = "https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2";
+        if (!url)
+            return;
+        
+        let response = HTTP.post(url + "?access_token=" + access_token, {
+            data: data,
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+        if (response.statusCode !== 200) {
+            throw response;
+        }
+        return response.data;
+    } catch (err) {
+        console.error(err);
+        throw _.extend(new Error("Failed to send message with error: " + err), {
+            response: err
+        });
+    }
 }

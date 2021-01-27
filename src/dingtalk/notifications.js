@@ -1,0 +1,107 @@
+let dtApi = require("./dt_api");
+// 网页授权url
+let oauthUrl = Meteor.absoluteUrl('?target=');
+
+Meteor.startup(function(){
+    Push.oldSend = Push.send;
+    Push.send = function(options){
+        Push.oldSend(options);
+        try {
+            // console.log("options:---",options);
+            if (options.from !== 'workflow')
+                return;
+            
+            if (!options.payload)
+                return;
+            
+            let space = Creator.getCollection('spaces').findOne({_id: options.payload.space});
+            
+            if (!space)
+                return;
+            
+            if (!space.dingtalk_corp_id || !space.dingtalk_agent_id || !space.dingtalk_key || !space.dingtalk_secret)
+                return;
+
+            let token = dtApi.accessTokenGet(space.dingtalk_key, space.dingtalk_secret);
+
+            let space_user = Creator.getCollection('space_users').findOne({space:space._id, user:options.query.userId});
+            if (!space_user.dingtalk_id)
+                return;
+            
+            console.log("Push.send");
+            let dingtalk_userId = space_user.dingtalk_id;
+            let agentId = space.dingtalk_agent_id;
+            let spaceId = space._id;
+            let payload = options.payload;
+            let url = "";
+            let text = "";
+            let title = "华炎魔方";
+            
+            // 审批流程
+            if (payload.instance){
+                title = workflowPush(options,spaceId).text;
+                text = workflowPush(options,spaceId).title;
+                url = workflowPush(options,spaceId).url;
+            }else{
+                title = options.title;
+                url = oauthUrl + payload.url;
+            }
+            
+            if (payload.related_to){
+                text = options.text;
+            }
+
+            let msg = {
+                "userid_list" : dingtalk_userId,
+                "agent_id" : agentId,
+                "to_all_user":"false",
+                "msg": {
+                    "msgtype": "action_card",
+                    "action_card" : {
+                        "title" : title,
+                        "markdown" : title,
+                        "single_title" : text,
+                        "single_url" : url + "&pc_slide=false"
+                    }   
+                }
+            }
+            // 发送推送消息
+            console.log("dtApi.sendMessage");
+            dtApi.sendMessage(msg, token.access_token);
+        } catch (error) {
+            console.error("Push error reason: ",error);
+        }
+    }
+})
+
+// 待审核推送
+let workflowPush = function(options,spaceId){
+    if (!options || (options == {}))
+        return false;
+    
+    let info = {};
+    info.text = "";
+    info.url = "";
+    info.title = "审批王";
+    // 获取申请单
+    let instanceId = options.payload.instance;
+    let instance = Creator.getCollection('instances').findOne({_id:instanceId});
+    
+    let inboxUrl =  oauthUrl + '/workflow/space/' + spaceId + '/inbox/' + options.payload.instance;
+
+    let outboxUrl = oauthUrl + '/workflow/space/' + spaceId + '/outbox/' + options.payload.instance;
+    
+    info.text = '请审批 ' + options.text;
+    info.url = inboxUrl;
+    info.title = options.title;
+    
+    if (!instance){
+        info.text = options.text;
+    }else{
+        if (instance.state == "completed"){
+            info.text = options.text;
+            info.url = outboxUrl;
+        }
+    }
+    return info;
+}
