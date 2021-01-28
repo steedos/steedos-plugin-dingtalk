@@ -726,7 +726,7 @@ exports.spaceGet = function(corpId){
 
 // 清理cookies
 exports.clearAuthCookies = function(req, res) {
-    var cookies, uri;
+    let cookies, uri;
     cookies = new Cookies(req, res);
     cookies.set("X-User-Id");
     cookies.set("X-Auth-Token");
