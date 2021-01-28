@@ -1,6 +1,6 @@
 let dtApi = require("./dt_api");
 // 网页授权url
-let oauthUrl = Meteor.absoluteUrl('?target=');
+let oauthUrl = Meteor.absoluteUrl();
 
 Meteor.startup(function () {
     Push.oldSend = Push.send;
@@ -49,6 +49,9 @@ Meteor.startup(function () {
             if (payload.related_to) {
                 text = options.text;
             }
+
+            let dintalk_url = "dingtalk://dingtalkclient/action/openapp?corpid=" + space.dingtalk_corp_id + "&container_type=work_platform&app_id=0_" + space.dingtalk_agent_id + "&redirect_type=jump&redirect_url=" + url;
+            // url: dingtalk://dingtalkclient/action/openapp?corpid=免登企业corpId&container_type=work_platform&app_id=0_{应用agentid}&redirect_type=jump&redirect_url=跳转url
             let msg = {
                 "userid_list": dingtalk_userId,
                 "agent_id": agentId,
@@ -56,8 +59,8 @@ Meteor.startup(function () {
                 "msg": {
                     "msgtype": "oa",
                     "oa": {
-                        "message_url": url,
-                        "pc_message_url": url + "&pc_slide=false",
+                        "message_url": dintalk_url,
+                        "pc_message_url": dintalk_url,
                         "head": {
                             "bgcolor": "FFBBBBBB",
                             "text": "华炎魔方"
@@ -90,9 +93,9 @@ let workflowPush = function (options, spaceId) {
     let instanceId = options.payload.instance;
     let instance = Creator.getCollection('instances').findOne({ _id: instanceId });
 
-    let inboxUrl = oauthUrl + '/workflow/space/' + spaceId + '/inbox/' + options.payload.instance;
+    let inboxUrl = oauthUrl + 'workflow/space/' + spaceId + '/inbox/' + options.payload.instance;
 
-    let outboxUrl = oauthUrl + '/workflow/space/' + spaceId + '/outbox/' + options.payload.instance;
+    let outboxUrl = oauthUrl + 'workflow/space/' + spaceId + '/outbox/' + options.payload.instance;
 
     info.text = '请审批 ' + options.text;
     info.url = inboxUrl;
