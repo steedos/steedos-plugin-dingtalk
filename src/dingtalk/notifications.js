@@ -50,8 +50,9 @@ Meteor.startup(function () {
                 text = options.text;
             }
 
-            let dintalk_url = "dingtalk://dingtalkclient/action/openapp?corpid=" + space.dingtalk_corp_id + "&container_type=work_platform&app_id=0_" + space.dingtalk_agent_id + "&redirect_type=jump&redirect_url=" + url;
             // url: dingtalk://dingtalkclient/action/openapp?corpid=免登企业corpId&container_type=work_platform&app_id=0_{应用agentid}&redirect_type=jump&redirect_url=跳转url
+            let dintalk_url = "dingtalk://dingtalkclient/action/openapp?corpid=" + space.dingtalk_corp_id + "&container_type=work_platform&app_id=0_" + space.dingtalk_agent_id + "&redirect_type=jump&redirect_url=" + encodeURIComponent(url);
+            
             let msg = {
                 "userid_list": dingtalk_userId,
                 "agent_id": agentId,

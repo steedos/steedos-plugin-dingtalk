@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=yes">
+    <title>华炎魔方</title>
+    <script type="text/javascript" src="https://g.alicdn.com/dingding/dingtalk-jsapi/2.10.3/dingtalk.open.js"></script>
+    <script type="text/javascript" src="../../lib/jquery/jquery-1.11.2.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../assets/styles/steedos-tailwind.min.css">
+    <script>
+        dd.ready(function () {
+            //获取当前网页的url
+            //http://ding-web.lnexin.cn/?corpid=ding46a9582af5b7541b35c2fxxxxxxxxxx8f
+            var currentUrl = document.location.toString();
+            // 解析url中包含的corpId
+            var corp_id = currentUrl.split("corpid=")[1];
+            //使用SDK 获取免登授权码
+            dd.runtime.permission.requestAuthCode({
+                corpId: corp_id,
+                onSuccess: function (info) {
+                    dingTalkLogin(corp_id, info.code);
+                },
+                onFail: function (err) {
+                    console.log(err);
+                }
+            });
+        });
+
+        dd.error(function (error) {
+            console.log("dd error: " + JSON.stringify(error));
+        });
+
+        var dingTalkLogin = function(corpId, code) {
+            if (corpId && code) {
+                var data = {
+                    "corpId": corpId,
+                    "code": code
+                };
+                var data = JSON.stringify(data);
+                var sso_api = window.location.origin + "/api/dingtalk/sso_steedos";
+                console.log("absoluteUrl: ", sso_api);
+                $.ajax({
+                    url: sso_api,
+                    type: "POST",
+                    async: false,
+                    data: data,
+                    contentType: "application/json",
+                    success: function (responseText, status) {
+                        console.log("responseText ", responseText);
+                        if (responseText == "reload") {
+                            window.location = window.location.origin;
+                        }
+                    },
+                    error: function (xhr, msg, ex) {
+                        console.log("errmsg: ", JSON.stringify(msg));
+                    }
+                });
+            }
+        }
+    </script>
+</head>
+
+<body>
+</body>
+
+</html>
