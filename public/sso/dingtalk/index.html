@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=yes">
@@ -11,27 +10,29 @@
     <script>
         dd.ready(function () {
             //获取当前网页的url
-            //http://ding-web.lnexin.cn/?corpid=ding46a9582af5b7541b35c2fxxxxxxxxxx8f
-            var currentUrl = document.location.toString();
-            // 解析url中包含的corpId
-            var corp_id = currentUrl.split("corpid=")[1];
-            //使用SDK 获取免登授权码
-            dd.runtime.permission.requestAuthCode({
-                corpId: corp_id,
-                onSuccess: function (info) {
-                    dingTalkLogin(corp_id, info.code);
-                },
-                onFail: function (err) {
-                    console.log(err);
-                }
-            });
+            var currentUrl = document.location.search.substr(1);
+
+            if (currentUrl && (currentUrl !== "")) {
+                // 解析url中包含的corpId
+                var corp_id = getQueryString("corpid", currentUrl);
+                //使用SDK 获取免登授权码
+                dd.runtime.permission.requestAuthCode({
+                    corpId: corp_id,
+                    onSuccess: function (info) {
+                        dingTalkLogin(corp_id, info.code, getQueryString("redirect_url", currentUrl));
+                    },
+                    onFail: function (err) {
+                        console.log(err);
+                    }
+                });
+            }
         });
 
         dd.error(function (error) {
             console.log("dd error: " + JSON.stringify(error));
         });
 
-        var dingTalkLogin = function (corpId, code) {
+        var dingTalkLogin = function (corpId, code, redirectUrl) {
             if (corpId && code) {
                 var data = {
                     "corpId": corpId,
@@ -48,9 +49,6 @@
                     contentType: "application/json",
                     success: function (responseText, status) {
                         console.log("responseText ", responseText);
-                        if (responseText == "user_exists") {
-                            window.location = window.location.origin;
-                        }
 
                         if (responseText == "no_space_user") {
                             $("body").append(`
@@ -75,6 +73,8 @@
                                 </div>
                             </div>`
                             )
+                        } else {
+                            window.location = window.location.origin + redirectUrl;
                         }
                     },
                     error: function (xhr, msg, ex) {
@@ -82,6 +82,16 @@
                     }
                 });
             }
+        }
+
+        // 获取url中参数值
+        var getQueryString = function (name, url) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+            var r = url.match(reg);
+            if (r != null)
+                return unescape(r[2]);
+
+            return "";
         }
     </script>
 </head>

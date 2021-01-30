@@ -267,7 +267,6 @@ router.post("/api/dingtalk/init", async function (req, res, next) {
 // dingtalk免登给用户设置cookies
 router.post("/api/dingtalk/sso_steedos", async function (req, res, next) {
     let authtToken,hashedToken,userId,cookies;
-    console.log("/api/dingtalk/sso_steedos");
     cookies = new Cookies(req, res);
     userId = cookies.get("X-User-Id");
     authToken = cookies.get("X-Auth-Token");

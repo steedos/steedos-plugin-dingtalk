@@ -768,12 +768,3 @@ exports.sendMessage = function(data, access_token){
         });
     }
 }
-
-exports.getAbsoluteUrl = function (url) {
-    var rootUrl;
-    rootUrl = __meteor_runtime_config__ ? __meteor_runtime_config__.ROOT_URL_PATH_PREFIX : "";
-    if (rootUrl) {
-      url = rootUrl + url;
-    }
-    return url;
-};

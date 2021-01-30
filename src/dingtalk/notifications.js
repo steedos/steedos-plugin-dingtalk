@@ -1,6 +1,6 @@
 let dtApi = require("./dt_api");
 // 网页授权url
-let oauthUrl = Meteor.absoluteUrl();
+let oauthUrl = Meteor.absoluteUrl("/sso/dingtalk?corpid=");
 
 Meteor.startup(function () {
     Push.oldSend = Push.send;
@@ -31,6 +31,7 @@ Meteor.startup(function () {
             let dingtalk_userId = space_user.dingtalk_id;
             let agentId = space.dingtalk_agent_id;
             let spaceId = space._id;
+            let corpId = space.dingtalk_corp_id;
             let payload = options.payload;
             let url = "";
             let text = "";
@@ -38,21 +39,21 @@ Meteor.startup(function () {
 
             // 审批流程
             if (payload.instance) {
-                title = workflowPush(options, spaceId).text;
-                text = workflowPush(options, spaceId).title;
-                url = workflowPush(options, spaceId).url;
+                title = workflowPush(options, spaceId, corpId).text;
+                text = workflowPush(options, spaceId, corpId).title;
+                url = workflowPush(options, spaceId, corpId).url;
             } else {
                 title = options.title;
-                url = oauthUrl + payload.url;
+                url = oauthUrl + corpId + "&redirect_url=" + payload.url;
             }
 
             if (payload.related_to) {
                 text = options.text;
             }
-
             // url: dingtalk://dingtalkclient/action/openapp?corpid=免登企业corpId&container_type=work_platform&app_id=0_{应用agentid}&redirect_type=jump&redirect_url=跳转url
-            let dintalk_url = "dingtalk://dingtalkclient/action/openapp?corpid=" + space.dingtalk_corp_id + "&container_type=work_platform&app_id=0_" + space.dingtalk_agent_id + "&redirect_type=jump&redirect_url=" + encodeURIComponent(url);
+            let dintalk_url = "dingtalk://dingtalkclient/action/openapp?corpid=" + corpId + "&container_type=work_platform&app_id=0_" + space.dingtalk_agent_id + "&redirect_type=jump&redirect_url=" + encodeURIComponent(url);
             
+            // 通知消息主体
             let msg = {
                 "userid_list": dingtalk_userId,
                 "agent_id": agentId,
@@ -82,7 +83,7 @@ Meteor.startup(function () {
 })
 
 // 待审核推送
-let workflowPush = function (options, spaceId) {
+let workflowPush = function (options, spaceId, corpId) {
     if (!options || (options == {}))
         return false;
 
@@ -94,9 +95,9 @@ let workflowPush = function (options, spaceId) {
     let instanceId = options.payload.instance;
     let instance = Creator.getCollection('instances').findOne({ _id: instanceId });
 
-    let inboxUrl = oauthUrl + 'workflow/space/' + spaceId + '/inbox/' + options.payload.instance;
+    let inboxUrl = oauthUrl + corpId + '&redirect_url=/workflow/space/' + spaceId + '/inbox/' + options.payload.instance;
 
-    let outboxUrl = oauthUrl + 'workflow/space/' + spaceId + '/outbox/' + options.payload.instance;
+    let outboxUrl = oauthUrl + corpId + '&redirect_url=/workflow/space/' + spaceId + '/outbox/' + options.payload.instance;
 
     info.text = '请审批 ' + options.text;
     info.url = inboxUrl;
