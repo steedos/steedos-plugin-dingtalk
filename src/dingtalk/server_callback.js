@@ -288,35 +288,36 @@ router.post("/api/dingtalk/sso_steedos", async function (req, res, next) {
     if (!code || !access_token)
         res.reply("缺少参数!");
 
-    let user_info, user_detail, space_user;
+    let user_info, space_user;
     user_info = dtApi.userInfoGet(access_token, code);
 
     if (user_info && user_info.userid) {
         space_user = db.space_users.findOne({
             'dingtalk_id': user_info.userid
         });
+
+        if (!space_user){
+            return res.end('no_space_user');
+        }
+
         if (space_user && authToken) {
             if (space_user.user != userId) {
-                console.log("space_user.user != userId");
                 dtApi.clearAuthCookies(req, res);
                 hashedToken = Accounts._hashLoginToken(authToken);
                 Accounts.destroyToken(userId, hashedToken);
             } else {
-                console.log("space_user.user ======= userId");
                 return res.end('login');
             }
         }
-        console.log("user_info && user_info.userid");
+
         let stampedAuthToken = auth.generateStampedLoginToken();
         let space_user_id = space_user.user;
-        // console.log("space_user: ",space_user);
-        // console.log("user_info: ",user_info);
         authtToken = stampedAuthToken.token;
         hashedToken = auth.hashStampedToken(stampedAuthToken);
         await auth.insertHashedLoginToken(space_user_id, hashedToken);
         auth.setAuthCookies(req, res, space_user_id, authtToken, space._id);
         res.setHeader('X-Space-Token', space._id + ',' + authtToken);
-        return res.end('reload');
+        return res.end('user_exists');
     } else {
         res.reply("用户不存在!");
     }
