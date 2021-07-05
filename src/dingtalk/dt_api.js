@@ -126,6 +126,7 @@ let departmentGet = function (access_token, department_id) {
         });
     }
 };
+exports.departmentGet = departmentGet;
 
 let departmentListGet = function (access_token) {
     var err, response;
@@ -151,6 +152,8 @@ let departmentListGet = function (access_token) {
         });
     }
 };
+exports.departmentListGet = departmentListGet;
+
 
 let userListGet = function (access_token, department_id) {
     var err, response;
@@ -177,6 +180,8 @@ let userListGet = function (access_token, department_id) {
         });
     }
 };
+exports.userListGet = userListGet;
+
 
 let getToken = function (corpid, corpsecret) {
     var err, response;
