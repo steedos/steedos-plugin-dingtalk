@@ -7,15 +7,16 @@ const { response } = require("express");
 const aes = require('wx-ding-aes')
 const fs = require('fs')
 
-const API_KEY = "cLj6r9VDLeQjBFYQ2nzfhAWLofrwVrubUFNSrssho1v"
-const LOG_PATH = "D:\\node.log"
+let objectql = require('@steedos/objectql');
+let steedosConfig = objectql.getSteedosConfig();
 
+if (!steedosConfig.dingtalk)
+    return;
+
+const API_KEY = steedosConfig.dingtalk.api_Key;
+const LOG_PATH = steedosConfig.dingtalk.log_path || './ding_server.log';
 
 router.get('/api/stockData', async function (req, res) {
-    // const userSession = req.user;
-    // const spaceId = userSession.spaceId;
-    // const userId = userSession.userId;
-    // const isSpaceAdmin = userSession.is_space_admin;
 
     access_token = getAccessToken();
 
@@ -52,7 +53,7 @@ router.post('/api/listen', async function (req, res) {
     var query = req.query
     // 获取工作区相关信息
     var dtSpace = dtApi.spaceGet();
-    console.log("dtSpace: ",dtSpace);
+    // console.log("dtSpace: ",dtSpace);
     var APP_KEY = dtSpace.dingtalk_key;
     var APP_SECRET = dtSpace.dingtalk_secret;
     var AES_KEY = dtSpace.dingtalk_aes_key;
@@ -172,31 +173,31 @@ function userinfoPush(userId, status = 0) {
     if (manage != "") {
         manageRes = queryGraphql('{\n  space_users(filters: [[\"dingtalk_id\", \"=\", \"' + manage + '\"]]) {\n    _id\n    owner\n  }\n}');
         if (manageRes.space_users.length == 0) {
-            manage = ""
+            manage = "";
+            profile = "user";
+            user_email = userId + "@temp.com";
         } else {
-            manage = manageRes['space_users'][0]['owner']
+            manage = manageRes['space_users'][0]['owner'];
+            profile = userRes['space_users'][0]['profile'];
+            user_email = userRes['space_users'][0]['email'];
         }
     }
 
     console.log("userRes: ", userRes);
-    if (userRes["space_users"].length == 0)
-        profile = 'user'
-    else
-        profile = userRes['space_users'][0]['profile']
     
     userinfo = {}
     userinfo['name'] = userinfotRes['name'];
     userinfo['mobile'] = userinfotRes['mobile'];
     userinfo['organization'] = deptIdList[0];
-    userinfo['email'] = userinfotRes['email'] || (userId + "@temp.com");
+    userinfo['email'] = userinfotRes['email'] || user_email || (userId + "@temp.com");
     userinfo['job_number'] = userinfotRes['jobnumber'] || "";
     userinfo['position'] = userinfotRes['position'] || "";
-    userinfo['manage'] = manage || "";
+    userinfo['manage'] = manage;
     userinfo['dingtalk_id'] = userId;
     userinfo['profile'] = profile;
     userinfo['organizations'] = JSON.stringify(deptIdList)
 
-    console.log("userinfo: ", userinfo);
+    // console.log("userinfo: ", userinfo);
     doc = '{user_accepted:true,organizations:' + userinfo['organizations'] + ',name:\"' + userinfo['name'] + '\",profile:\"' + userinfo['profile'] + '\",mobile:\"' + userinfo['mobile'] + '\",organization:\"' + userinfo['organization'] + '\",email:\"' + userinfo['email'] + '\",job_number:\"' + userinfo['job_number'] + '\",position:\"' + userinfo['position'] + '\",manager:\"' + userinfo['manage'] + '\",dingtalk_id:\"' + userinfo['dingtalk_id'] + '\"}';
     if (userRes.space_users.length == 0) {
         insertUserRes = queryGraphql('mutation {\n  space_users__insert(doc: ' + doc + ') {\n    _id\n  }\n}')
@@ -266,6 +267,7 @@ function queryGraphql(queryStr) {
     write("================Graphql===================")
     write(queryStr)
     var HTTP_DOMAIN = Steedos.absoluteUrl('graphql');
+    // console.log("HTTP_DOMAIN---: ",HTTP_DOMAIN);
     res = HTTP.post(HTTP_DOMAIN, {
         data: {
             query: queryStr

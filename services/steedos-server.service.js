@@ -28,8 +28,8 @@ module.exports = {
             "@steedos/accounts",
             "@steedos/accounts",
             "@steedos/steedos-plugin-schema-builder",
-            "@steedos/accounts",
-            "@steedos/accounts",
+            "@steedos/plugin-enterprise",
+            "@steedos/word-template",
             "@steedos/accounts",
             "@steedos/metadata-api",
             "@steedos/accounts"

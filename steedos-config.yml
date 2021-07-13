@@ -21,5 +21,9 @@ tenant:
   enable_password_login: true
   enable_bind_email: false
   enable_bind_mobile: false
+dingtalk:
+  api_Key: ${APIKEY}
+  log_path: ${LOGPATH}
 plugins:
   - "@steedos/accounts"
+  - "@steedos/plugin-enterprise"
