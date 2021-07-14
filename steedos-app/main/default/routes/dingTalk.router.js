@@ -80,7 +80,7 @@ router.post('/api/listen', async function (req, res) {
         encrypt: encrypt
     });
     try {
-        console.log(data.data.EventType)
+        // console.log(data.data.EventType)
         switch (data.data.EventType) {
             //通讯录用户增加。
             case 'user_add_org':
@@ -136,74 +136,85 @@ router.post('/api/listen', async function (req, res) {
 
 //status = 新增 2:离职
 function userinfoPush(userId, status = 0) {
+    try {
+        var profile, user_email;
+        console.log(userId)
+        console.log(status)
 
-    console.log(userId)
-    console.log(status)
+        if (status == 2) {
+            userRes = queryGraphql('{\n  space_users(filters: [[\"dingtalk_id\", \"=\", \"' + userId + '\"]]) {\n    _id\n    name\n  }\n}');
+            if (userRes.space_users.length != 0) {
+                userRes = queryGraphql('mutation {\n  space_users__update(id:\"' + userRes['space_users'][0]['_id'] + '\", doc: {user_accepted: false}) {\n    _id\n  }\n}');
+            }
 
-    if (status == 2) {
-        userRes = queryGraphql('{\n  space_users(filters: [[\"dingtalk_id\", \"=\", \"' + userId + '\"]]) {\n    _id\n    name\n  }\n}');
-        if (userRes.space_users.length != 0) {
-            userRes = queryGraphql('mutation {\n  space_users__update(id:\"' + userRes['space_users'][0]['_id'] + '\", doc: {user_accepted: false}) {\n    _id\n  }\n}');
+            return true
         }
 
-        return true
-    }
 
 
 
+        access_token = getAccessToken()
 
-    access_token = getAccessToken()
+        write("================获取用户详情===================")
+        write("access_token:" + access_token)
+        write("userId:" + userId)
+        userinfotRes = dtApi.userGet(access_token, userId);
+        // console.log("userinfotRes: ", userinfotRes);
+        write(userinfotRes)
+        write("================获取用户详情 END===================")
 
-    write("================获取用户详情===================")
-    write("access_token:" + access_token)
-    write("userId:" + userId)
-    userinfotRes = dtApi.userGet(access_token, userId);
-    console.log("userinfotRes: ", userinfotRes);
-    write(userinfotRes)
-    write("================获取用户详情 END===================")
+        deptIdList = [];
+        for (let i = 0; i < userinfotRes['department'].length; i++) {
+            deptRes = queryGraphql('{\n  organizations(filters: [[\"dingtalk_id\", \"=\", \"' + userinfotRes['department'][i] + '\"]]) {\n    _id\n    name\n  }\n}');
+            deptIdList.push(deptRes['organizations'][0]['_id'])
+        }
 
-    deptIdList = [];
-    for (let i = 0; i < userinfotRes['department'].length; i++) {
-        deptRes = queryGraphql('{\n  organizations(filters: [[\"dingtalk_id\", \"=\", \"' + userinfotRes['department'][i] + '\"]]) {\n    _id\n    name\n  }\n}');
-        deptIdList.push(deptRes['organizations'][0]['_id'])
-    }
+        userRes = queryGraphql('{\n  space_users(filters: [[\"dingtalk_id\", \"=\", \"' + userId + '\"]]) {\n    _id\n    name\n  profile\n}\n}');
+        manage = userinfotRes['managerUserid'] == undefined ? "" : userinfotRes['managerUserid'];
+        if (manage != "") {
+            manageRes = queryGraphql('{\n  space_users(filters: [[\"dingtalk_id\", \"=\", \"' + manage + '\"]]) {\n    _id\n    owner\n  }\n}');
+            if (manageRes.space_users.length == 0) {
+                manage = "";
+            } else {
+                manage = manageRes['space_users'][0]['owner'];
+            }
+        }
 
-    userRes = queryGraphql('{\n  space_users(filters: [[\"dingtalk_id\", \"=\", \"' + userId + '\"]]) {\n    _id\n    name\n  profile\n}\n}');
-    manage = userinfotRes['managerUserid'] == undefined ? "" : userinfotRes['managerUserid'];
-    if (manage != "") {
-        manageRes = queryGraphql('{\n  space_users(filters: [[\"dingtalk_id\", \"=\", \"' + manage + '\"]]) {\n    _id\n    owner\n  }\n}');
-        if (manageRes.space_users.length == 0) {
-            manage = "";
+        if (userRes["space_users"].length == 0) {
             profile = "user";
             user_email = userId + "@temp.com";
         } else {
-            manage = manageRes['space_users'][0]['owner'];
             profile = userRes['space_users'][0]['profile'];
             user_email = userRes['space_users'][0]['email'];
         }
+
+        // console.log("userRes: ", userRes);
+
+        userinfo = {}
+        userinfo['name'] = userinfotRes['name'];
+        userinfo['mobile'] = userinfotRes['mobile'];
+        userinfo['organization'] = deptIdList[0];
+        userinfo['email'] = userinfotRes['email'] || user_email || (userId + "@temp.com");
+        userinfo['job_number'] = userinfotRes['jobnumber'] || "";
+        userinfo['position'] = userinfotRes['position'] || "";
+        userinfo['manage'] = manage;
+        userinfo['dingtalk_id'] = userId;
+        userinfo['profile'] = profile;
+        userinfo['organizations'] = JSON.stringify(deptIdList)
+
+        // console.log("userinfo: ", userinfo);
+        doc = '{user_accepted:true,organizations:' + userinfo['organizations'] + ',name:\"' + userinfo['name'] + '\",profile:\"' + userinfo['profile'] + '\",mobile:\"' + userinfo['mobile'] + '\",organization:\"' + userinfo['organization'] + '\",email:\"' + userinfo['email'] + '\",job_number:\"' + userinfo['job_number'] + '\",position:\"' + userinfo['position'] + '\",manager:\"' + userinfo['manage'] + '\",dingtalk_id:\"' + userinfo['dingtalk_id'] + '\"}';
+        if (userRes.space_users.length == 0) {
+            insertUserRes = queryGraphql('mutation {\n  space_users__insert(doc: ' + doc + ') {\n    _id\n  }\n}')
+        } else {
+            updateUserRes = queryGraphql('mutation {\n  space_users__update(id:\"' + userRes['space_users'][0]['_id'] + '\",doc: ' + doc + ') {\n    _id\n  }\n}')
+        }
+    } catch (error) {
+        if (error){
+            console.log("userinfoPush error: ",error);
+        }
     }
 
-    console.log("userRes: ", userRes);
-    
-    userinfo = {}
-    userinfo['name'] = userinfotRes['name'];
-    userinfo['mobile'] = userinfotRes['mobile'];
-    userinfo['organization'] = deptIdList[0];
-    userinfo['email'] = userinfotRes['email'] || user_email || (userId + "@temp.com");
-    userinfo['job_number'] = userinfotRes['jobnumber'] || "";
-    userinfo['position'] = userinfotRes['position'] || "";
-    userinfo['manage'] = manage;
-    userinfo['dingtalk_id'] = userId;
-    userinfo['profile'] = profile;
-    userinfo['organizations'] = JSON.stringify(deptIdList)
-
-    // console.log("userinfo: ", userinfo);
-    doc = '{user_accepted:true,organizations:' + userinfo['organizations'] + ',name:\"' + userinfo['name'] + '\",profile:\"' + userinfo['profile'] + '\",mobile:\"' + userinfo['mobile'] + '\",organization:\"' + userinfo['organization'] + '\",email:\"' + userinfo['email'] + '\",job_number:\"' + userinfo['job_number'] + '\",position:\"' + userinfo['position'] + '\",manager:\"' + userinfo['manage'] + '\",dingtalk_id:\"' + userinfo['dingtalk_id'] + '\"}';
-    if (userRes.space_users.length == 0) {
-        insertUserRes = queryGraphql('mutation {\n  space_users__insert(doc: ' + doc + ') {\n    _id\n  }\n}')
-    } else {
-        updateUserRes = queryGraphql('mutation {\n  space_users__update(id:\"' + userRes['space_users'][0]['_id'] + '\",doc: ' + doc + ') {\n    _id\n  }\n}')
-    }
 
 
 
@@ -212,40 +223,57 @@ function userinfoPush(userId, status = 0) {
 
 //status = 新增 2:离职
 function deptinfoPush(deptId, status = 0) {
+    try {
+        var parent_id;
+        
+        if (status == 2) {
+            deptRes = queryGraphql('{\n  organizations(filters: [[\"dingtalk_id\", \"=\", \"' + deptId + '\"]]) {\n    _id\n    name\n  }\n}');
+            if (deptRes.organizations.length != 0) {
+                deptRes = queryGraphql('mutation {\n  organizations__delete(id:\"' + deptRes['organizations'][0]['_id'] + '\") \n}');
+            }
 
-    if (status == 2) {
+            return true
+        }
+        access_token = getAccessToken()
+
+        //获取部门详情
+        write("================获取部门详情===================")
+        write("access_token:" + access_token)
+        write("deptId:" + deptId)
+        deptinfotRes = dtApi.departmentGet(access_token, deptId);
+        write(deptinfotRes)
+        write("================获取部门详情 END===================")
+        write("access_token:" + access_token)
+        //查看数据库是否存在
         deptRes = queryGraphql('{\n  organizations(filters: [[\"dingtalk_id\", \"=\", \"' + deptId + '\"]]) {\n    _id\n    name\n  }\n}');
-        if (deptRes.organizations.length != 0) {
-            deptRes = queryGraphql('mutation {\n  organizations__delete(id:\"' + deptRes['organizations'][0]['_id'] + '\") \n}');
+
+        //找到数据库中上级信息，如果没有上级找到顶级信息
+        if (deptinfotRes['parentid'] == undefined) {
+            parentDeptInfo = queryGraphql('{\n  organizations(filters: [[\"parent\", \"=\", null]]) {\n    _id\n  }\n}');
+        } else {
+            parentDeptInfo = queryGraphql('{\n  organizations(filters: [[\"dingtalk_id\", \"=\", \"' + deptinfotRes['parentid'] + '\"]]) {\n    _id\n    name\n  }\n}');
         }
 
-        return true
-    }
-    access_token = getAccessToken()
+        if(deptId.toString() == "1"){
+            parent_id = null;
+        }else{
+            parent_id = parentDeptInfo['organizations'][0]['_id'];
+        }
 
-    //获取部门详情
-    write("================获取部门详情===================")
-    write("access_token:" + access_token)
-    write("deptId:" + deptId)
-    deptinfotRes = dtApi.departmentGet(access_token, deptId);
-    write(deptinfotRes)
-    write("================获取部门详情 END===================")
-    write("access_token:" + access_token)
-    //查看数据库是否存在
-    deptRes = queryGraphql('{\n  organizations(filters: [[\"dingtalk_id\", \"=\", \"' + deptId + '\"]]) {\n    _id\n    name\n  }\n}');
+        if (deptRes.organizations.length == 0) {
+            insertDeptRes = queryGraphql('mutation {\n  organizations__insert(doc: {dingtalk_id :\"' + deptId + '\",name: \"' + deptinfotRes['name'] + '\", parent: \"' + parent_id + '\"}) {\n    _id\n  }\n}')
+        } else if(parent_id){
+            updateDeptRes = queryGraphql('mutation {\n  organizations__update(id:\"' + deptRes['organizations'][0]['_id'] + '\",doc: {dingtalk_id :\"' + deptId + '\",name: \"' + deptinfotRes['name'] + '\", parent: \"' + parent_id + '\"}) {\n    _id\n  }\n}')
+        }else{
+            updateDeptRes = queryGraphql('mutation {\n  organizations__update(id:\"' + deptRes['organizations'][0]['_id'] + '\",doc: {dingtalk_id :\"' + deptId + '\",name: \"' + deptinfotRes['name'] + '\"}) {\n    _id\n  }\n}')
+        }
 
-    //找到数据库中上级信息，如果没有上级找到顶级信息
-    if (deptinfotRes['parentid'] == undefined) {
-        parentDeptInfo = queryGraphql('{\n  organizations(filters: [[\"parent\", \"=\", null]]) {\n    _id\n  }\n}');
-    } else {
-        parentDeptInfo = queryGraphql('{\n  organizations(filters: [[\"dingtalk_id\", \"=\", \"' + deptinfotRes['parentid'] + '\"]]) {\n    _id\n    name\n  }\n}');
+    } catch (error) {
+        if (error) {
+            console.log("deptinfoPush error: ", error);
+        }
     }
 
-    if (deptRes.organizations.length == 0) {
-        insertDeptRes = queryGraphql('mutation {\n  organizations__insert(doc: {dingtalk_id :\"' + deptId + '\",name: \"' + deptinfotRes['name'] + '\", parent: \"' + parentDeptInfo['organizations'][0]['_id'] + '\"}) {\n    _id\n  }\n}')
-    } else {
-        updateDeptRes = queryGraphql('mutation {\n  organizations__update(id:\"' + deptRes['organizations'][0]['_id'] + '\",doc: {dingtalk_id :\"' + deptId + '\",name: \"' + deptinfotRes['name'] + '\", parent: \"' + parentDeptInfo['organizations'][0]['_id'] + '\"}) {\n    _id\n  }\n}')
-    }
 
 }
 
